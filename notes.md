@@ -1,0 +1,2 @@
+- Début du test le 02/06/2026 à 11h10. 
+  - L'environnement a été installé avec succès préalablement.
