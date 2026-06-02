@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -33,8 +35,45 @@ class RepairOrder
     #[ORM\Column(length: 1000, nullable: true)]
     public $description;
 
+    /**
+     * @var Collection<int, Quote>
+     */
+    #[ORM\OneToMany(mappedBy: 'repairOrder', targetEntity: Quote::class)]
+    private Collection $quotes;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
+        $this->quotes = new ArrayCollection();
+    }
+
+    /**
+     * @return Collection<int, Quote>
+     */
+    public function getQuotes(): Collection
+    {
+        return $this->quotes;
+    }
+
+    public function addQuote(Quote $quote): static
+    {
+        if (!$this->quotes->contains($quote)) {
+            $this->quotes->add($quote);
+            $quote->setRepairOrder($this);
+        }
+
+        return $this;
+    }
+
+    public function removeQuote(Quote $quote): static
+    {
+        if ($this->quotes->removeElement($quote)) {
+            // set the owning side to null (unless already changed)
+            if ($quote->getRepairOrder() === $this) {
+                $quote->setRepairOrder(null);
+            }
+        }
+
+        return $this;
     }
 }

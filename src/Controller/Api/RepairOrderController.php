@@ -4,6 +4,7 @@ namespace App\Controller\Api;
 
 use App\Entity\Customer;
 use App\Entity\RepairOrder;
+use App\Repository\QuoteRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -39,7 +40,7 @@ class RepairOrderController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['GET'])]
-    public function show($id, EntityManagerInterface $em)
+    public function show(int $id, EntityManagerInterface $em, QuoteRepository $quoteRepository)
     {
         $repairOrder = $em->find(RepairOrder::class, $id);
 
@@ -47,6 +48,15 @@ class RepairOrderController extends AbstractController
             return new JsonResponse(['error' => 'Ordre de réparation introuvable'], 404);
         }
 
+        $latestQuote = $quoteRepository->findLatestByRepairOrderId($repairOrder->id);
+        // Non fait car manque de temps:
+        // - Injecter le QuoteService
+        // - Calculer les totaux de chaque ligne (en utilisant QuoteService) et les ajouter dans un tableau ($quote['lines'])
+        // - Calculer les montants HT et TTC (en utilisant QuoteService) et les ajouter dans un tableau ($quote)
+        $quote = [
+            // A remplir ...
+        ];
+        
         return new JsonResponse([
             'id'          => $repairOrder->id,
             'reference'   => $repairOrder->reference,
@@ -60,6 +70,7 @@ class RepairOrderController extends AbstractController
                 'email' => $repairOrder->customer->email,
                 'phone' => $repairOrder->customer->phone,
             ] : null,
+            'quote'     => $quote,
         ]);
     }
 
@@ -116,7 +127,7 @@ class RepairOrderController extends AbstractController
     }
 
     #[Route('/{id}', methods: ['PUT'])]
-    public function update($id, Request $request, EntityManagerInterface $em)
+    public function update(int $id, Request $request, EntityManagerInterface $em)
     {
         $repairOrder = $em->find(RepairOrder::class, $id);
 

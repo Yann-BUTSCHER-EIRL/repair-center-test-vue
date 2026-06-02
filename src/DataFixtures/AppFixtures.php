@@ -5,6 +5,11 @@ namespace App\DataFixtures;
 use App\Entity\Customer;
 use App\Entity\Part;
 use App\Entity\RepairOrder;
+use App\Entity\Quote;
+use App\Entity\LabourType;
+use App\Entity\LineLabour;
+use App\Entity\LinePart;
+use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 
@@ -55,12 +60,14 @@ class AppFixtures extends Fixture
             ['reference' => 'ANTICORR',   'label' => 'Traitement anticorrosion', 'salePrice' => 22.00],
         ];
 
+        $parts = [];
         foreach ($catalogue as $pd) {
             $part            = new Part();
             $part->reference = $pd['reference'];
             $part->label     = $pd['label'];
             $part->salePrice = $pd['salePrice'];
             $manager->persist($part);
+            $parts[] = $part;
         }
 
         // Quelques ordres de réparation d'exemple. Le devis (lignes + total) est à construire :
@@ -74,6 +81,7 @@ class AppFixtures extends Fixture
             ['customer' => $customers[4], 'status' => 'CANCELLED',     'description' => 'Réparation griffures carrosserie — annulé par le client'],
         ];
 
+        $repairOrders = [];
         foreach ($ordersData as $od) {
             $repairOrder              = new RepairOrder();
             $repairOrder->reference   = 'OR-' . strtoupper(substr(md5(uniqid()), 0, 8));
@@ -82,7 +90,48 @@ class AppFixtures extends Fixture
             $repairOrder->description = $od['description'];
             $repairOrder->createdAt   = new \DateTime('-' . rand(1, 30) . ' days');
             $manager->persist($repairOrder);
+            $repairOrders[] = $repairOrder;
         }
+
+        $labourTypesData = [
+            ['label' => 'Tôlerie', 'description' => 'Débosselage, redressage, remplacement d\'éléments de carrosserie', 'indicativeHourlyRate' => 65],
+            ['label' => 'Peinture', 'description' => 'Préparation, apprêt, mise en peinture, vernis', 'indicativeHourlyRate' => 70],
+            ['label' => 'Mécanique', 'description' => 'Dépose/repose mécanique, organes', 'indicativeHourlyRate' => 60],
+        ];
+
+        $labourTypes = [];
+        foreach ($labourTypesData as $lt) {
+            $labourType = new LabourType();
+            $labourType->setLabel($lt['label']);
+            $labourType->setDescription($lt['description']);
+            $labourType->setIndicativeHourlyRate($lt['indicativeHourlyRate']);
+            $manager->persist($labourType);
+            $labourTypes[] = $labourType;
+        }
+
+        $quote = new Quote();
+        $quote->setReference('DEV-00001');
+        $quote->setCreatedAt(new DateTimeImmutable());
+        $quote->setRepairOrder($repairOrders[0]);
+        $manager->persist($quote);
+
+        $linePart = new LinePart();
+        $linePart->setPart($parts[12]);
+        $linePart->setQuantity(1);
+        $linePart->setTaxPercentage(20);
+        $quote->addLinesPart($linePart);
+        $manager->persist($linePart);
+        $manager->persist($quote);
+
+        $lineLabour = new LineLabour();
+        $lineLabour->setLabourType($labourTypes[0]);
+        $lineLabour->setTimeSpent(1.5);
+        $lineLabour->setHourlyRate($labourTypes[0]->getIndicativeHourlyRate());
+        $lineLabour->setQuote($quote);
+        $lineLabour->setTaxPercentage(5.5);
+        $quote->addLinesLabour($lineLabour);
+        $manager->persist($lineLabour);
+        $manager->persist($lineLabour);
 
         $manager->flush();
     }

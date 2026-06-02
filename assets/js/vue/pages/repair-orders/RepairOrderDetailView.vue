@@ -24,7 +24,89 @@
 
         <hr />
 
-        <p class="text-muted mb-0">Le devis de cet ordre est à construire.</p>
+        <div class="container my-4">
+          <!-- En-tête -->
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">DEVIS</h1>
+
+            <div class="text-end">
+              <div>
+                <strong>Référence :</strong> {{ order.quote?.reference }}
+              </div>
+              <div>
+                <strong>Date :</strong> {{ order.quote?.createdAt }}
+              </div>
+            </div>
+          </div>      
+
+        <!-- Tableau -->
+        <div class="card">
+          <div class="card-body p-0">
+            <table class="table table-bordered table-striped align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Désignation</th>
+                  <th class="text-end">Montant HT</th>
+                  <th class="text-center">Quantité</th>
+                  <th class="text-center">TVA (%)</th>
+                  <th class="text-center">Remise (%)</th>
+                  <th class="text-end">Montant TTC</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="(line, index) in order.quote.lines"
+                  :key="index"
+                >
+                  <td>{{ line.displayLabel }}</td>
+
+                  <td class="text-end">
+                    {{ formatPrice(line.priceExcludingTaxes) }}
+                  </td>
+
+                  <td class="text-center">
+                    {{ line.quantity }}
+                  </td>
+
+                  <td class="text-center">
+                    {{ line.taxPercentage }}
+                  </td>
+
+                  <td class="text-center">
+                    {{ line.discountPercentage }}
+                  </td>
+
+                  <td class="text-end">
+                    {{ formatPrice(line.priceWithTaxes) }}
+                  </td>
+                </tr>
+              </tbody>
+
+              <tfoot>
+                <tr>
+                  <td colspan="5" class="text-end fw-bold">
+                    Total HT
+                  </td>
+
+                  <td class="text-end fw-bold">
+                    {{ formatPrice(order.quote?.totalExcludingTaxes) }}
+                  </td>
+                </tr>
+
+                <tr class="table-secondary">
+                  <td colspan="5" class="text-end fw-bold">
+                    Total TTC
+                  </td>
+
+                  <td class="text-end fw-bold">
+                    {{ formatPrice(order.quote?.totalWithTaxes) }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -37,6 +119,15 @@ import { statusLabel } from './status'
 
 const props = defineProps<{ id: string }>()
 
+interface Line {
+  displayLabel: string
+  priceExcludingTaxes: number
+  quantity: number
+  taxPercentage: number
+  discountPercentage: number
+  priceWithTaxes: number
+}
+
 interface RepairOrder {
   id: number
   reference: string
@@ -44,6 +135,7 @@ interface RepairOrder {
   totalAmount: number
   description: string | null
   customer: { name: string; email: string | null; phone?: string | null } | null
+  quote: { reference: string, createdAt: string, lines: Array<Line>, totalExcludingTaxes: number, totalWithTaxes:number }
 }
 
 const order = ref<RepairOrder | null>(null)
@@ -63,5 +155,12 @@ async function load(): Promise<void> {
   }
 }
 
+const formatPrice = (value: number) => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(value)
+}
+  
 onMounted(load)
 </script>
